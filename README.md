@@ -8,3 +8,21 @@ matrix should be highly sparse, namely the number of zero element is more that 7
 • dataset for the benchmark (compare all the implementation presented by selecting at least 10
 matrices from suite sparse matrix collection https://sparse.tamu.edu/);
 As usual, the metric to consider is the effective bandwidth.
+
+#   To run the code
+Is sufficient to run the following commands on the repo folder
+``` 
+make
+./bin/final
+``` 
+And to check the plots on python
+``` 
+python plot.py
+``` 
+
+This project is the direct evolution of https://github.com/Sminnitex/Homework2_GPUComputing
+Therefore the prerequisites are the same as the one described in that repository, and are:
+
+>   python3 equipped with matplotlib, pandas and numpy
+>   cuda and the cuda toolkit
+>   gcc and cmake

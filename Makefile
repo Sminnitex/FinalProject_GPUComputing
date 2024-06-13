@@ -1,6 +1,6 @@
 CC = nvcc
 LIB_HOME = $(CURDIR)
-LIBS = -L$(LIB_HOME)/lib64
+LIBS = -L$(LIB_HOME)/lib64 -lcusparse -lcudart
 INCLUDE = -Isrc
 OPT = -std=c++14 -O0
 
