@@ -8,7 +8,7 @@
 #include <cuda_runtime.h>
 #include <cusparse.h>
 
-#define NDEVICE 2
+#define NDEVICE 4
 #define TIMER_DEF     struct timeval temp_1, temp_2
 #define TIMER_START   gettimeofday(&temp_1, (struct timezone*)0)
 #define TIMER_STOP    gettimeofday(&temp_2, (struct timezone*)0)
@@ -17,11 +17,11 @@
 int main(int argc, char *argv[]) {
     //Initialize all the stuff we need
     srand(time(NULL));
-    dtype *matrix;
+    dtype *matrix = NULL;
     int number[3];
     read_mtx("./dataset/1138_bus/1138_bus.mtx", matrix, number);
     int blocksize = 32;
-    int gridsize = (number[0] + blocksize - 1) / 32;
+    int gridsize = 28;
 
     printf("==============================================================\n");
     printf("STATS OF MY PROBLEM\n");
@@ -46,6 +46,7 @@ int main(int argc, char *argv[]) {
         printf("%c", ch);
     }
     fclose(file);
+    
 
     //Initialize kernel and timer
     dummyKernel<<<grid_size, block_size>>>();
@@ -53,75 +54,109 @@ int main(int argc, char *argv[]) {
     float times[NDEVICE] = {0};
     cusparseHandle_t handle;
     cusparseCreate(&handle);
+    checkCudaErrors(cudaGetLastError());
 
-    // Example sparse matrix in CSR format
-    int m = number[0]; // number of rows
-    int n = number[1]; // number of columns
-    int nnz = number[2];  // number of non-zero elements
+    //Assign number of rows, columns and non zero elements
+    int m = number[0]; 
+    int n = number[1]; 
+    int nnz = number[2];  
 
-    // Allocate and initialize host memory
+    //Allocate and initialize host memory
     int *h_csrRowPtr = (int *)malloc((m + 1) * sizeof(int));
     int *h_csrColInd = (int *)malloc(nnz * sizeof(int));
     float *h_csrVal = (float *)malloc(nnz * sizeof(float));
 
-    // Allocate device memory
+    //Allocate device memory
     int *d_csrRowPtr, *d_csrColInd, *d_cscRowInd, *d_cscColPtr;
     float *d_csrVal, *d_cscVal;
-    cudaMalloc((void **)&d_csrRowPtr, (m + 1) * sizeof(int));
-    cudaMalloc((void **)&d_csrColInd, nnz * sizeof(int));
-    cudaMalloc((void **)&d_csrVal, nnz * sizeof(float));
-    cudaMalloc((void **)&d_cscRowInd, nnz * sizeof(int));
-    cudaMalloc((void **)&d_cscColPtr, (n + 1) * sizeof(int));
-    cudaMalloc((void **)&d_cscVal, nnz * sizeof(float));
+    checkCudaErrors(cudaMalloc((void **)&d_csrRowPtr, (m + 1) * sizeof(int)));
+    checkCudaErrors(cudaMalloc((void **)&d_csrColInd, nnz * sizeof(int)));
+    checkCudaErrors(cudaMalloc((void **)&d_csrVal, nnz * sizeof(float)));
+    checkCudaErrors(cudaMalloc((void **)&d_cscRowInd, nnz * sizeof(int)));
+    checkCudaErrors(cudaMalloc((void **)&d_cscColPtr, (n + 1) * sizeof(int)));
+    checkCudaErrors(cudaMalloc((void **)&d_cscVal, nnz * sizeof(float)));
 
-    // Copy data to device
-    cudaMemcpy(d_csrRowPtr, h_csrRowPtr, (m + 1) * sizeof(int), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_csrColInd, h_csrColInd, nnz * sizeof(int), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_csrVal, h_csrVal, nnz * sizeof(float), cudaMemcpyHostToDevice);
+    //Assign values host memory
+    h_csrRowPtr[0] = 0;
+    int nnz_counter = 0;
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < n; j++) {
+            if (matrix[i + j * m] != 0) {
+                h_csrColInd[nnz_counter] = j;
+                h_csrVal[nnz_counter] = matrix[i + j * m];
+                nnz_counter++;
+            }
+        }
+        h_csrRowPtr[i + 1] = nnz_counter;
+    }
 
-    // Perform sparse matrix transpose
-    cusparseStatus_t status;
+    //Copy data to device
+    checkCudaErrors(cudaMemcpy(d_csrRowPtr, h_csrRowPtr, (m + 1) * sizeof(int), cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(d_csrColInd, h_csrColInd, nnz * sizeof(int), cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(d_csrVal, h_csrVal, nnz * sizeof(float), cudaMemcpyHostToDevice));
+
+    //Perform sparse matrix transpose with cusparse
     size_t bufferSize;
     void *buffer;
-    status = cusparseCsr2cscEx2_bufferSize(handle, m, n, nnz, d_csrVal, d_csrRowPtr, d_csrColInd, 
-                                           d_cscVal, d_cscColPtr, d_cscRowInd, 
-                                           CUDA_R_32F, CUSPARSE_ACTION_NUMERIC, 
-                                           CUSPARSE_INDEX_BASE_ZERO, CUSPARSE_CSR2CSC_ALG1, &bufferSize);
-    if (status != CUSPARSE_STATUS_SUCCESS) {
-        printf("Buffer size calculation failed\n");
-        return 1;
-    }
-    cudaMalloc(&buffer, bufferSize);
+    TIMER_START;
+    cusparseTransposeBuffer(handle, m, n, nnz, d_csrVal, d_csrRowPtr, d_csrColInd, 
+                           d_cscVal, d_cscColPtr, d_cscRowInd, bufferSize, buffer);
+    TIMER_STOP;
+    times[0] = TIMER_ELAPSED;
 
-    status = cusparseCsr2cscEx2(handle, m, n, nnz, d_csrVal, d_csrRowPtr, d_csrColInd, 
-                                d_cscVal, d_cscColPtr, d_cscRowInd, 
-                                CUDA_R_32F, CUSPARSE_ACTION_NUMERIC, 
-                                CUSPARSE_INDEX_BASE_ZERO, CUSPARSE_CSR2CSC_ALG1, buffer);
-    if (status != CUSPARSE_STATUS_SUCCESS) {
-        printf("Matrix transpose failed\n");
-        return 1;
-    }
+    TIMER_START;
+    cusparseTranspose(handle, m, n, nnz, d_csrVal, d_csrRowPtr, d_csrColInd, 
+                      d_cscVal, d_cscColPtr, d_cscRowInd, buffer);
+    TIMER_STOP;
+    times[1] = TIMER_ELAPSED;
+
+    //Perform a normal matrix transpose with kernels from homework 2
+    cudaStream_t stream;
+    checkCudaErrors(cudaStreamCreate(&stream));
+    dtype *transpose = NULL, *transposeShared = NULL;
+    checkCudaErrors(cudaMallocManaged(&transpose, sizeof(dtype) * m * n));
+    checkCudaErrors(cudaMallocManaged(&transposeShared, sizeof(dtype) * m * n));
+
+    TIMER_START;
+    transposeGlobalMatrix<<<grid_size, block_size, sharedMemSize, stream>>>(matrix, transpose, m, n);
+    checkCudaErrors(cudaGetLastError());
+    checkCudaErrors(cudaDeviceSynchronize());
+    TIMER_STOP;
+    times[2] = TIMER_ELAPSED;
+
+    TIMER_START;
+    transposeSharedMatrix<<<grid_size, block_size, sharedMemSize, stream>>>(matrix, transposeShared, m, n);
+    checkCudaErrors(cudaGetLastError());
+    checkCudaErrors(cudaDeviceSynchronize());
+    TIMER_STOP;
+    times[3] = TIMER_ELAPSED;
 
     //Print effective Bandwidth
     printf("==============================================================\n");
     printf("STATS\n");
-    printf("My Sparse Matrix Transpose Effective Bandwidth(GB/s): %f\n", (2 * number[0] * number[1] * sizeof(dtype)) / (1e9 * times[1]));
-    printf("Cuda Sparse Matrix Transpose Effective Bandwidth(GB/s): %f\n", (2 * number[0] * number[1] * sizeof(dtype)) / (1e9 * times[0]));
-    
+    printf("Sparse Matrix Transpose With Cusparse Buffer Effective Bandwidth(GB/s): %f\n", (2 * number[0] * number[1] * sizeof(dtype)) / (1e9 * times[0]));
+    printf("Sparse Matrix Transpose With Cusparse Effective Bandwidth(GB/s): %f\n", (2 * number[0] * number[1] * sizeof(dtype)) / (1e9 * times[1]));
+    printf("Global Matrix Transpose Effective Bandwidth(GB/s): %f\n", (2 * number[0] * number[1] * sizeof(dtype)) / (1e9 * times[2]));
+    printf("Shared Matrix Transpose Effective Bandwidth(GB/s): %f\n", (2 * number[0] * number[1] * sizeof(dtype)) / (1e9 * times[3]));
+
     //Destroy everything
-    cudaFree(buffer);
-    cudaFree(d_csrRowPtr);
-    cudaFree(d_csrColInd);
-    cudaFree(d_csrVal);
-    cudaFree(d_cscRowInd);
-    cudaFree(d_cscColPtr);
-    cudaFree(d_cscVal);
+    checkCudaErrors(cudaFree(buffer));
+    checkCudaErrors(cudaFree(d_csrRowPtr));
+    checkCudaErrors(cudaFree(d_csrColInd));
+    checkCudaErrors(cudaFree(d_csrVal));
+    checkCudaErrors(cudaFree(d_cscRowInd));
+    checkCudaErrors(cudaFree(d_cscColPtr));
+    checkCudaErrors(cudaFree(d_cscVal));
 
     cusparseDestroy(handle);
+    checkCudaErrors(cudaGetLastError());
+    checkCudaErrors(cudaFree(transpose));
+    checkCudaErrors(cudaFree(transposeShared));
 
     free(h_csrRowPtr);
     free(h_csrColInd);
     free(h_csrVal);
+    free(matrix);
 
     return 0;
 }
