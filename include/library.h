@@ -131,4 +131,21 @@ __global__ void transposeSharedMatrix(dtype *matrix, dtype *transpose, int rows,
     }
 }
 
+void printCSCMatrix(int *cscRowPtr, int *cscColInd, dtype *csrVal, int n, int nnz, const char* ST) {
+    printf("%s (CSC Format):\n", ST);
+    printf("Row Pointers: ");
+    for (int i = 0; i <= n; i++) {
+        printf("%d ", cscRowPtr[i]);
+    }
+    printf("\nCol Indices: ");
+    for (int i = 0; i < nnz; i++) {
+        printf("%d ", cscColInd[i]);
+    }
+    printf("\nValues: ");
+    for (int i = 0; i < nnz; i++) {
+        printf("%6.3f ", csrVal[i]);
+    }
+    printf("\n\n");
+}
+
 #endif
