@@ -69,29 +69,34 @@ int read_mtx(const char* path, dtype*& matrix, int number[3]) {
     return 0;
 }
 
-void cusparseTransposeBuffer(cusparseHandle_t handle, int m, int n, int nnz, 
+void cusparseTranspose(cusparseHandle_t handle, int m, int n, int nnz, 
                              const float *d_csrVal, const int *d_csrRowPtr, const int *d_csrColInd, 
-                             float *d_cscVal, int *d_cscColPtr, int *d_cscRowInd, 
-                             size_t& bufferSize, void*& buffer) {
-    cusparseCsr2cscEx2_bufferSize(handle, m, n, nnz, d_csrVal, d_csrRowPtr, d_csrColInd, 
+                             float *d_cscVal, int *d_cscColPtr, int *d_cscRowInd, void*& buffer) {
+    size_t bufferSize;
+    cusparseStatus_t status = cusparseCsr2cscEx2_bufferSize(handle, m, n, nnz, d_csrVal, d_csrRowPtr, d_csrColInd, 
                                   d_cscVal, d_cscColPtr, d_cscRowInd, 
                                   CUDA_R_32F, CUSPARSE_ACTION_NUMERIC, 
                                   CUSPARSE_INDEX_BASE_ZERO, CUSPARSE_CSR2CSC_ALG1, &bufferSize);
-    checkCudaErrors(cudaGetLastError());
-    checkCudaErrors(cudaDeviceSynchronize());
+    if (status != CUSPARSE_STATUS_SUCCESS) {
+        fprintf(stderr, "CUSPARSE Error: %s\n", cusparseGetErrorString(status));
+        exit(EXIT_FAILURE);
+    }
     checkCudaErrors(cudaMalloc(&buffer, bufferSize));
-}
+    
+    status = cusparseCsr2cscEx2(handle, m, n, nnz, d_csrVal, d_csrRowPtr, d_csrColInd, 
+                    d_cscVal, d_cscColPtr, d_cscRowInd, 
+                    CUDA_R_32F, CUSPARSE_ACTION_NUMERIC, 
+                    CUSPARSE_INDEX_BASE_ZERO, CUSPARSE_CSR2CSC_ALG1, buffer);
+    if (status != CUSPARSE_STATUS_SUCCESS) {
+        fprintf(stderr, "CUSPARSE Error: %s\n", cusparseGetErrorString(status));
+        cudaFree(buffer);  // Free the buffer before exiting
+        exit(EXIT_FAILURE);
+    }
 
-void cusparseTranspose(cusparseHandle_t handle, int m, int n, int nnz, 
-                       const float *d_csrVal, const int *d_csrRowPtr, const int *d_csrColInd, 
-                       float *d_cscVal, int *d_cscColPtr, int *d_cscRowInd, 
-                       void *buffer) {
-    cusparseCsr2cscEx2(handle, m, n, nnz, d_csrVal, d_csrRowPtr, d_csrColInd, 
-                       d_cscVal, d_cscColPtr, d_cscRowInd, 
-                       CUDA_R_32F, CUSPARSE_ACTION_NUMERIC, 
-                       CUSPARSE_INDEX_BASE_ZERO, CUSPARSE_CSR2CSC_ALG1, buffer);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
+    checkCudaErrors(cudaFree(buffer));
+    printf("%zu", buffer);
 }
 
 __global__ void transposeGlobalMatrix(dtype *matrix, dtype *transpose, int rows, int cols) {
@@ -131,7 +136,7 @@ __global__ void transposeSharedMatrix(dtype *matrix, dtype *transpose, int rows,
     }
 }
 
-void printCSCMatrix(int *cscRowPtr, int *cscColInd, dtype *csrVal, int n, int nnz, const char* ST) {
+void printSparseMatrix(int *cscRowPtr, int *cscColInd, dtype *csrVal, int n, int nnz, const char* ST) {
     printf("%s (CSC Format):\n", ST);
     printf("Row Pointers: ");
     for (int i = 0; i <= n; i++) {
