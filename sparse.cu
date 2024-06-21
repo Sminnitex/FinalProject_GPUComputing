@@ -8,7 +8,7 @@
 #include <cuda_runtime.h>
 #include <cusparse.h>
 
-#define NDEVICE 3
+#define NDEVICE 4
 #define TIMER_DEF     struct timeval temp_1, temp_2
 #define TIMER_START   gettimeofday(&temp_1, (struct timezone*)0)
 #define TIMER_STOP    gettimeofday(&temp_2, (struct timezone*)0)
@@ -168,6 +168,23 @@ int main(int argc, char *argv[]) {
         checkCudaErrors(cudaMemcpy(h_transposeShared, transposeShared, m * n * sizeof(dtype), cudaMemcpyDeviceToHost));
 
         //Perform a transpose with kernel adapted for sparse matrices
+        int *d_my_csrRowPtr, *d_my_csrColInd, *d_my_cscRowInd, *d_my_cscColPtr;
+        dtype *d_my_csrVal, *d_my_cscVal;
+        checkCudaErrors(cudaMalloc((void **)&d_my_csrRowPtr, (m + 1) * sizeof(int)));
+        checkCudaErrors(cudaMalloc((void **)&d_my_csrColInd, nnz * sizeof(int)));
+        checkCudaErrors(cudaMalloc((void **)&d_my_csrVal, nnz * sizeof(dtype)));
+        checkCudaErrors(cudaMalloc((void **)&d_my_cscRowInd, nnz * sizeof(int)));
+        checkCudaErrors(cudaMalloc((void **)&d_my_cscColPtr, (n + 1) * sizeof(int)));
+        checkCudaErrors(cudaMalloc((void **)&d_my_cscVal, nnz * sizeof(dtype)));
+
+        checkCudaErrors(cudaMemcpy(d_my_csrRowPtr, h_csrRowPtr, (m + 1) * sizeof(int), cudaMemcpyHostToDevice));
+        checkCudaErrors(cudaMemcpy(d_my_csrColInd, h_csrColInd, nnz * sizeof(int), cudaMemcpyHostToDevice));
+        checkCudaErrors(cudaMemcpy(d_my_csrVal, h_csrVal, nnz * sizeof(dtype), cudaMemcpyHostToDevice));
+         
+         TIMER_START;
+         sparseMatrixTranspose<<<grid_size, block_size, sharedMemSize, stream>>>(m, n, nnz, d_my_csrVal, d_my_csrRowPtr, d_csrColInd, d_my_cscVal, d_my_cscColPtr, d_my_cscRowInd);
+         TIMER_STOP;
+         times[3] = TIMER_ELAPSED;
 
         //Print effective Bandwidth
         printf("==============================================================\n");
@@ -175,7 +192,7 @@ int main(int argc, char *argv[]) {
         printf("Sparse Matrix Transpose With Cusparse Effective Bandwidth(GB/s): %f\n", (2 * m * n * sizeof(dtype)) / (1e9 * times[0]));
         printf("Global Matrix Transpose Effective Bandwidth(GB/s): %f\n", (2 * m * n * sizeof(dtype)) / (1e9 * times[1]));
         printf("Shared Matrix Transpose Effective Bandwidth(GB/s): %f\n", (2 * m * n * sizeof(dtype)) / (1e9 * times[2]));
-
+        printf("My Sparse Matrix Transpose Effective Bandwidth(GB/s): %f\n", (2 * m * n * sizeof(dtype)) / (1e9 * times[3]));
 
         //Lines for debug purposes
         //printMatrix(matrix, m, n, "Matrix");
@@ -195,6 +212,13 @@ int main(int argc, char *argv[]) {
         checkCudaErrors(cudaFree(transpose));
         checkCudaErrors(cudaFree(transposeShared));
         checkCudaErrors(cudaStreamDestroy(stream));
+
+        checkCudaErrors(cudaFree(d_my_csrRowPtr));
+        checkCudaErrors(cudaFree(d_my_csrColInd));
+        checkCudaErrors(cudaFree(d_my_csrVal));
+        checkCudaErrors(cudaFree(d_my_cscRowInd));
+        checkCudaErrors(cudaFree(d_my_cscColPtr));
+        checkCudaErrors(cudaFree(d_my_cscVal));
 
         free(h_csrRowPtr);
         free(h_csrColInd);

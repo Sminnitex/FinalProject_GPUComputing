@@ -153,4 +153,9 @@ void printSparseMatrix(int *cscRowPtr, int *cscColInd, dtype *csrVal, int n, int
     printf("\n\n");
 }
 
+__global__ void sparseMatrixTranspose(int m, int n, int nnz, dtype *d_csrVal, int *d_csrRowPtr, 
+                            int *d_csrColInd, dtype *d_cscVal, int *d_cscColPtr, int *d_cscRowInd){
+    printf("My code");
+}
+
 #endif
