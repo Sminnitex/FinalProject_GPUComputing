@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
     srand(time(NULL));
     int array_length = sizeof(path) / sizeof(path[0]);  
     int blocksize = 32;
-    int gridsize = 28;
+    int gridsize = 1;
     printf("==============================================================\n");
     printf("STATS OF MY PROBLEM\n");
     printf("block size = %d \n", blocksize);
@@ -182,7 +182,7 @@ int main(int argc, char *argv[]) {
         checkCudaErrors(cudaMemcpy(d_my_csrVal, h_csrVal, nnz * sizeof(dtype), cudaMemcpyHostToDevice));
          
          TIMER_START;
-         sparseMatrixTranspose<<<grid_size, block_size, sharedMemSize, stream>>>(m, n, nnz, d_my_csrVal, d_my_csrRowPtr, d_csrColInd, d_my_cscVal, d_my_cscColPtr, d_my_cscRowInd);
+         sparseMatrixTranspose(m, n, nnz, d_my_csrVal, d_my_csrRowPtr, d_csrColInd, d_my_cscVal, d_my_cscColPtr, d_my_cscRowInd);
          TIMER_STOP;
          times[3] = TIMER_ELAPSED;
 
@@ -226,6 +226,7 @@ int main(int argc, char *argv[]) {
         free(matrix);
         free(h_transpose);
         free(h_transposeShared);
+        checkCudaErrors(cudaGetLastError());
         checkCudaErrors(cudaDeviceReset());
     }
 

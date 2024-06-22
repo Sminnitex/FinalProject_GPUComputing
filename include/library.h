@@ -153,9 +153,72 @@ void printSparseMatrix(int *cscRowPtr, int *cscColInd, dtype *csrVal, int n, int
     printf("\n\n");
 }
 
-__global__ void sparseMatrixTranspose(int m, int n, int nnz, dtype *d_csrVal, int *d_csrRowPtr, 
+__global__ void countNnzPerColumn(int nnz, int *d_csrColInd, int *d_nnzPerCol) {
+    int tid = blockDim.x * blockIdx.x + threadIdx.x;
+    if (tid < nnz) {
+        atomicAdd(&d_nnzPerCol[d_csrColInd[tid]], 1);
+    }
+}
+
+__global__ void fillCscColPtr(int n, int *d_nnzPerCol, int *d_cscColPtr) {
+    int tid = blockDim.x * blockIdx.x + threadIdx.x;
+    if (tid == 0) {
+        d_cscColPtr[0] = 0;
+        for (int i = 0; i < n; i++) {
+            d_cscColPtr[i+1] = d_cscColPtr[i] + d_nnzPerCol[i];
+        }
+    }
+}
+
+__global__ void fillCscValAndRowInd(int m, int n, int nnz, dtype *d_csrVal, int *d_csrRowPtr, 
+                                    int *d_csrColInd, dtype *d_cscVal, int *d_cscColPtr, int *d_cscRowInd) {
+    int tid = blockDim.x * blockIdx.x + threadIdx.x;
+    if (tid < m) {
+        for (int i = d_csrRowPtr[tid]; i < d_csrRowPtr[tid + 1]; i++) {
+            int col = d_csrColInd[i];
+            int dest = atomicAdd(&d_cscColPtr[col], 1);
+            d_cscVal[dest] = d_csrVal[i];
+            d_cscRowInd[dest] = tid;
+        }
+    }
+}
+
+void sparseMatrixTranspose(int m, int n, int nnz, dtype *d_csrVal, int *d_csrRowPtr, 
                             int *d_csrColInd, dtype *d_cscVal, int *d_cscColPtr, int *d_cscRowInd){
-    printf("My code");
+    //We need to go from a csr matrix format to a csc matrix format
+    //Allocate temporary device memory
+    int *d_nnzPerCol;
+    checkCudaErrors(cudaMalloc((void**)&d_nnzPerCol, n * sizeof(int)));
+    checkCudaErrors(cudaMemset(d_nnzPerCol, 0, n * sizeof(int)));
+
+    //Launch kernel to count the non-zero elements per column for the transposed matrix
+    int blockSize = 256;
+    int gridSize = (nnz + blockSize - 1) / blockSize;
+    countNnzPerColumn<<<gridSize, blockSize>>>(nnz, d_csrColInd, d_nnzPerCol);
+    checkCudaErrors(cudaGetLastError());
+    checkCudaErrors(cudaDeviceSynchronize());
+    
+    //Launch kernel to fill the column pointers for the CSC format
+    gridSize = 1;  //Only one block needed to fill the column pointers
+    fillCscColPtr<<<gridSize, blockSize>>>(n, d_nnzPerCol, d_cscColPtr);
+    checkCudaErrors(cudaGetLastError());
+    checkCudaErrors(cudaDeviceSynchronize());
+
+    //Copy column pointers back and adjust them to be exclusive scan
+    checkCudaErrors(cudaMemcpy(d_nnzPerCol, d_cscColPtr, n * sizeof(int), cudaMemcpyDeviceToDevice));
+    checkCudaErrors(cudaMemcpy(d_cscColPtr, d_nnzPerCol, n * sizeof(int), cudaMemcpyDeviceToDevice));
+    checkCudaErrors(cudaMemcpy(d_cscColPtr + 1, d_nnzPerCol, n * sizeof(int), cudaMemcpyDeviceToDevice));
+    checkCudaErrors(cudaMemset(d_cscColPtr, 0, sizeof(int)));
+
+    //Launch kernel to fill the CSC values and row indices
+    gridSize = (m + blockSize - 1) / blockSize;
+    fillCscValAndRowInd<<<gridSize, blockSize>>>(m, n, nnz, d_csrVal, d_csrRowPtr, 
+                                                 d_csrColInd, d_cscVal, d_cscColPtr, d_cscRowInd);
+    checkCudaErrors(cudaGetLastError());
+    checkCudaErrors(cudaDeviceSynchronize());
+
+    //Free temporary device memory
+    checkCudaErrors(cudaFree(d_nnzPerCol));
 }
 
 #endif
