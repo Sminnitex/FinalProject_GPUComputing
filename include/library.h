@@ -96,7 +96,6 @@ void cusparseTranspose(cusparseHandle_t handle, int m, int n, int nnz,
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
     checkCudaErrors(cudaFree(buffer));
-    printf("%zu", buffer);
 }
 
 __global__ void transposeGlobalMatrix(dtype *matrix, dtype *transpose, int rows, int cols) {
@@ -174,7 +173,7 @@ __global__ void fillCscValAndRowInd(int m, int n, int nnz, dtype *d_csrVal, int 
                                     int *d_csrColInd, dtype *d_cscVal, int *d_cscColPtr, int *d_cscRowInd) {
     int tid = blockDim.x * blockIdx.x + threadIdx.x;
     if (tid < m) {
-        for (int i = d_csrRowPtr[tid]; i < d_csrRowPtr[tid + 1]; i++) {
+        for (int i = d_csrRowPtr[tid]; i < d_csrRowPtr[tid]; i++) {
             int col = d_csrColInd[i];
             int dest = atomicAdd(&d_cscColPtr[col], 1);
             d_cscVal[dest] = d_csrVal[i];
@@ -184,7 +183,8 @@ __global__ void fillCscValAndRowInd(int m, int n, int nnz, dtype *d_csrVal, int 
 }
 
 void sparseMatrixTranspose(int m, int n, int nnz, dtype *d_csrVal, int *d_csrRowPtr, 
-                            int *d_csrColInd, dtype *d_cscVal, int *d_cscColPtr, int *d_cscRowInd){
+                            int *d_csrColInd, dtype *d_cscVal, int *d_cscColPtr, int *d_cscRowInd,
+                            int sharedMemory, cudaStream_t stream){
     //We need to go from a csr matrix format to a csc matrix format
     //Allocate temporary device memory
     int *d_nnzPerCol;
@@ -194,13 +194,13 @@ void sparseMatrixTranspose(int m, int n, int nnz, dtype *d_csrVal, int *d_csrRow
     //Launch kernel to count the non-zero elements per column for the transposed matrix
     int blockSize = 256;
     int gridSize = (nnz + blockSize - 1) / blockSize;
-    countNnzPerColumn<<<gridSize, blockSize>>>(nnz, d_csrColInd, d_nnzPerCol);
+    countNnzPerColumn<<<gridSize, blockSize, sharedMemory, stream>>>(nnz, d_csrColInd, d_nnzPerCol);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
     
     //Launch kernel to fill the column pointers for the CSC format
     gridSize = 1;  //Only one block needed to fill the column pointers
-    fillCscColPtr<<<gridSize, blockSize>>>(n, d_nnzPerCol, d_cscColPtr);
+    fillCscColPtr<<<gridSize, blockSize, sharedMemory, stream>>>(n, d_nnzPerCol, d_cscColPtr);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
 
@@ -212,7 +212,7 @@ void sparseMatrixTranspose(int m, int n, int nnz, dtype *d_csrVal, int *d_csrRow
 
     //Launch kernel to fill the CSC values and row indices
     gridSize = (m + blockSize - 1) / blockSize;
-    fillCscValAndRowInd<<<gridSize, blockSize>>>(m, n, nnz, d_csrVal, d_csrRowPtr, 
+    fillCscValAndRowInd<<<gridSize, blockSize, sharedMemory, stream>>>(m, n, nnz, d_csrVal, d_csrRowPtr, 
                                                  d_csrColInd, d_cscVal, d_cscColPtr, d_cscRowInd);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());

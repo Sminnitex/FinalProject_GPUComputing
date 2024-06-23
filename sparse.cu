@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
     dim3 grid_size(gridsize, gridsize, 1);
     printf("%d: block_size = (%d, %d), grid_size = (%d, %d)\n", __LINE__, block_size.x, block_size.y, grid_size.x, grid_size.y);
     int sharedMemSize = sizeof(dtype) * block_size.x * block_size.y * 2;
-    int number[3], m, n, nnz;
+    int *number, m, n, nnz;
     int nnz_counter = 0;
 
     //Timer definitions
@@ -61,9 +61,10 @@ int main(int argc, char *argv[]) {
     }
     fclose(file);
 
-    for(int k = 0; k < array_length - 5; k++){
+    for(int k = 0; k < array_length; k++){
         //Initialize all the stuff we need
         dtype *matrix = NULL;
+        number = (int *)malloc(3 * sizeof(int));
         read_mtx(path[k], matrix, number);
         
         //Assign number of rows, columns and non zero elements
@@ -182,7 +183,7 @@ int main(int argc, char *argv[]) {
         checkCudaErrors(cudaMemcpy(d_my_csrVal, h_csrVal, nnz * sizeof(dtype), cudaMemcpyHostToDevice));
          
          TIMER_START;
-         sparseMatrixTranspose(m, n, nnz, d_my_csrVal, d_my_csrRowPtr, d_csrColInd, d_my_cscVal, d_my_cscColPtr, d_my_cscRowInd);
+         sparseMatrixTranspose(m, n, nnz, d_my_csrVal, d_my_csrRowPtr, d_csrColInd, d_my_cscVal, d_my_cscColPtr, d_my_cscRowInd, sharedMemSize, stream);
          TIMER_STOP;
          times[3] = TIMER_ELAPSED;
 
@@ -226,6 +227,7 @@ int main(int argc, char *argv[]) {
         free(matrix);
         free(h_transpose);
         free(h_transposeShared);
+        free(number);
         checkCudaErrors(cudaGetLastError());
         checkCudaErrors(cudaDeviceReset());
     }
