@@ -89,7 +89,7 @@ void cusparseTranspose(cusparseHandle_t handle, int m, int n, int nnz,
                     CUSPARSE_INDEX_BASE_ZERO, CUSPARSE_CSR2CSC_ALG1, buffer);
     if (status != CUSPARSE_STATUS_SUCCESS) {
         fprintf(stderr, "CUSPARSE Error: %s\n", cusparseGetErrorString(status));
-        cudaFree(buffer);  // Free the buffer before exiting
+        checkCudaErrors(cudaFree(buffer));  // Free the buffer before exiting
         exit(EXIT_FAILURE);
     }
 

@@ -23,7 +23,8 @@ int main(int argc, char *argv[]) {
         "./dataset/mycielskian10/mycielskian10.mtx",
         "./dataset/mycielskian11/mycielskian11.mtx",
         "./dataset/mycielskian12/mycielskian12.mtx",
-        "./dataset/mycielskian14/mycielskian14.mtx"
+        "./dataset/mycielskian14/mycielskian14.mtx",
+        "./dataset/bcsstk17/bcsstk17.mtx"
     };
 
     //Stats of my problem
@@ -40,7 +41,7 @@ int main(int argc, char *argv[]) {
     printf("%d: block_size = (%d, %d), grid_size = (%d, %d)\n", __LINE__, block_size.x, block_size.y, grid_size.x, grid_size.y);
     int sharedMemSize = sizeof(dtype) * block_size.x * block_size.y * 2;
     int *number, m, n, nnz;
-    int nnz_counter = 0;
+    int nnz_counter;
 
     //Timer definitions
     TIMER_DEF;
@@ -66,6 +67,7 @@ int main(int argc, char *argv[]) {
         dtype *matrix = NULL;
         number = (int *)malloc(3 * sizeof(int));
         read_mtx(path[k], matrix, number);
+        nnz_counter = 0;
         
         //Assign number of rows, columns and non zero elements
         m = number[0]; 
@@ -88,8 +90,8 @@ int main(int argc, char *argv[]) {
         dtype *h_csrVal = (dtype *)malloc(nnz * sizeof(dtype));
 
         if (h_csrRowPtr == NULL || h_csrColInd == NULL || h_csrVal == NULL) {
-            fprintf(stderr, "Error allocating host memory\n");
-            return 1;
+           fprintf(stderr, "Error allocating host memory\n");
+           return 1;
         }
 
         //Allocate device memory
@@ -107,19 +109,27 @@ int main(int argc, char *argv[]) {
         for (int i = 0; i < m; i++) {
             for (int j = 0; j < n; j++) {
                 if (matrix[i + j * m] != 0) {
+                    if (nnz_counter >= nnz) {
+                        fprintf(stderr, "Error: nnz_counter (%d) exceeded nnz (%d) at i=%d, j=%d\n", nnz_counter, nnz, i, j);
+                        exit(EXIT_FAILURE);
+                    }
                     h_csrColInd[nnz_counter] = j;
-                    h_csrVal[nnz_counter] = matrix[i + j * m];
+                    h_csrVal[nnz_counter] = matrix[i + j * m]; //QUI ERRORE
                     nnz_counter++;
                 }
             }
-            h_csrRowPtr[i + 1] = nnz_counter;
+        if (i + 1 > m) {
+            fprintf(stderr, "Error: i+1 (%d) exceeded m (%d)\n", i + 1, m);
+            exit(EXIT_FAILURE);
         }
+        h_csrRowPtr[i + 1] = nnz_counter;
+    }
         
         //Copy data to device
         checkCudaErrors(cudaMemcpy(d_csrRowPtr, h_csrRowPtr, (m + 1) * sizeof(int), cudaMemcpyHostToDevice));
         checkCudaErrors(cudaMemcpy(d_csrColInd, h_csrColInd, nnz * sizeof(int), cudaMemcpyHostToDevice));
         checkCudaErrors(cudaMemcpy(d_csrVal, h_csrVal, nnz * sizeof(dtype), cudaMemcpyHostToDevice));
-         
+        
         //Perform sparse matrix transpose with cusparse
         void *buffer;
         TIMER_START;
@@ -182,10 +192,10 @@ int main(int argc, char *argv[]) {
         checkCudaErrors(cudaMemcpy(d_my_csrColInd, h_csrColInd, nnz * sizeof(int), cudaMemcpyHostToDevice));
         checkCudaErrors(cudaMemcpy(d_my_csrVal, h_csrVal, nnz * sizeof(dtype), cudaMemcpyHostToDevice));
          
-         TIMER_START;
-         sparseMatrixTranspose(m, n, nnz, d_my_csrVal, d_my_csrRowPtr, d_csrColInd, d_my_cscVal, d_my_cscColPtr, d_my_cscRowInd, sharedMemSize, stream);
-         TIMER_STOP;
-         times[3] = TIMER_ELAPSED;
+        TIMER_START;
+        sparseMatrixTranspose(m, n, nnz, d_my_csrVal, d_my_csrRowPtr, d_csrColInd, d_my_cscVal, d_my_cscColPtr, d_my_cscRowInd, sharedMemSize, stream);
+        TIMER_STOP;
+        times[3] = TIMER_ELAPSED;
 
         //Print effective Bandwidth
         printf("==============================================================\n");
@@ -230,6 +240,11 @@ int main(int argc, char *argv[]) {
         free(number);
         checkCudaErrors(cudaGetLastError());
         checkCudaErrors(cudaDeviceReset());
+        
+        //Reset times array
+        for (int i = 0; i < NDEVICE; i++) {
+            times[i] = 0.0;
+        }
     }
 
     return 0;
