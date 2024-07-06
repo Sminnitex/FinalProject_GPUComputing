@@ -31,6 +31,26 @@ void printMatrix(dtype *matrix, int rows, int cols, const char* ST){
     printf("\n\n");
 }
 
+__global__ void printDeviceData(const int *d_csrRowPtr, const int *d_csrColInd, const float *d_csrVal, int m, int nnz) {
+        printf("d_csrRowPtr: ");
+        for (int i = 0; i <= m; i++) {
+            printf("%d ", d_csrRowPtr[i]);
+        }
+        printf("\n\n");
+
+        printf("d_csrColInd: ");
+        for (int i = 0; i < nnz; i++) {
+            printf("%d ", d_csrColInd[i]);
+        }
+        printf("\n\n");
+
+        printf("d_csrVal: ");
+        for (int i = 0; i < nnz; i++) {
+            printf("%f ", d_csrVal[i]);
+        }
+        printf("\n\n");
+}
+
 int read_mtx(const char* path, dtype*& matrix, int number[3]) {
     std::ifstream fin(path);
     if (!fin.is_open()) {
@@ -40,7 +60,7 @@ int read_mtx(const char* path, dtype*& matrix, int number[3]) {
 
     int M, N, L;
 
-    // Ignore headers and comments:
+    //Ignore headers and comments:
     while (fin.peek() == '%') fin.ignore(2048, '\n');
 
     // Read defining parameters:
@@ -92,7 +112,7 @@ void cusparseTranspose(cusparseHandle_t handle, int m, int n, int nnz,
         checkCudaErrors(cudaFree(buffer));  // Free the buffer before exiting
         exit(EXIT_FAILURE);
     }
-
+    
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
     checkCudaErrors(cudaFree(buffer));

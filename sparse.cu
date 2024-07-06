@@ -18,12 +18,6 @@ int main(int argc, char *argv[]) {
     //The paths of our benchmark matrices
     const char* path[] = {
         "./dataset/1138_bus/1138_bus.mtx",
-        "./dataset/mycielskian6/mycielskian6.mtx",
-        "./dataset/mycielskian7/mycielskian7.mtx",
-        "./dataset/mycielskian10/mycielskian10.mtx",
-        "./dataset/mycielskian11/mycielskian11.mtx",
-        "./dataset/mycielskian12/mycielskian12.mtx",
-        "./dataset/mycielskian14/mycielskian14.mtx",
         "./dataset/bcsstk17/bcsstk17.mtx"
     };
 
@@ -79,10 +73,13 @@ int main(int argc, char *argv[]) {
         checkCudaErrors(cudaGetLastError()); 
         checkCudaErrors(cudaDeviceSynchronize());
 
-        //Cusparse handle
+        //Cusparse handle and stream
         cusparseHandle_t handle;
         cusparseCreate(&handle);
         checkCudaErrors(cudaGetLastError()); 
+        cudaStream_t stream;
+        checkCudaErrors(cudaStreamCreate(&stream));
+
 
         //Allocate and initialize host memory
         int *h_csrRowPtr = (int *)malloc((m + 1) * sizeof(int));
@@ -114,7 +111,7 @@ int main(int argc, char *argv[]) {
                         exit(EXIT_FAILURE);
                     }
                     h_csrColInd[nnz_counter] = j;
-                    h_csrVal[nnz_counter] = matrix[i + j * m]; //QUI ERRORE
+                    h_csrVal[nnz_counter] = matrix[i + j * m]; 
                     nnz_counter++;
                 }
             }
@@ -126,9 +123,9 @@ int main(int argc, char *argv[]) {
     }
         
         //Copy data to device
-        checkCudaErrors(cudaMemcpy(d_csrRowPtr, h_csrRowPtr, (m + 1) * sizeof(int), cudaMemcpyHostToDevice));
-        checkCudaErrors(cudaMemcpy(d_csrColInd, h_csrColInd, nnz * sizeof(int), cudaMemcpyHostToDevice));
-        checkCudaErrors(cudaMemcpy(d_csrVal, h_csrVal, nnz * sizeof(dtype), cudaMemcpyHostToDevice));
+        checkCudaErrors(cudaMemcpyAsync(d_csrRowPtr, h_csrRowPtr, (m + 1) * sizeof(int), cudaMemcpyHostToDevice, stream));
+        checkCudaErrors(cudaMemcpyAsync(d_csrColInd, h_csrColInd, nnz * sizeof(int), cudaMemcpyHostToDevice, stream));
+        checkCudaErrors(cudaMemcpyAsync(d_csrVal, h_csrVal, nnz * sizeof(dtype), cudaMemcpyHostToDevice, stream));
         
         //Perform sparse matrix transpose with cusparse
         void *buffer;
@@ -144,9 +141,6 @@ int main(int argc, char *argv[]) {
         checkCudaErrors(cudaMemcpy(h_csrVal, d_cscVal, nnz * sizeof(dtype), cudaMemcpyDeviceToHost));
 
         //Perform a normal matrix transpose with kernels from homework 2
-        cudaStream_t stream;
-        checkCudaErrors(cudaStreamCreate(&stream));
-
         dtype *transpose = NULL, *transposeShared = NULL, *d_matrix = NULL;
         checkCudaErrors(cudaMallocManaged(&d_matrix, sizeof(dtype) * m * n ));
         checkCudaErrors(cudaMallocManaged(&transpose, sizeof(dtype) * m * n));
@@ -210,6 +204,7 @@ int main(int argc, char *argv[]) {
         //printSparseMatrix(h_csrRowPtr, h_csrColInd, h_csrVal, n, nnz, "Cusparse Transposed Matrix");
         //printMatrix(h_transpose, m, n, "Transpose");
         //printMatrix(h_transposeShared, m, n, "Transpose Shared");
+        //printDeviceData<<<1, 1, 0, stream>>>(d_cscColPtr, d_cscRowInd, d_csrVal, m, nnz);
 
         //Destroy everything
         checkCudaErrors(cudaFree(d_csrRowPtr));
