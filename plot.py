@@ -2,25 +2,25 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 
-df = pd.read_csv("output/timeShared0.csv")
-df2 = pd.read_csv("output/timeShared1.csv")
-df3 = pd.read_csv("output/timeShared2.csv")
-df4 = pd.read_csv("output/timeShared3.csv")
-df5 = pd.read_csv("output/timeGlobal0.csv")
-df6 = pd.read_csv("output/timeGlobal1.csv")
-df7 = pd.read_csv("output/timeGlobal2.csv")
-df8 = pd.read_csv("output/timeGlobal3.csv")
+df0 = pd.read_csv("output/Matrix0.csv")
+df1 = pd.read_csv("output/Matrix1.csv")
+df2 = pd.read_csv("output/Matrix2.csv")
+df3 = pd.read_csv("output/Matrix3.csv")
+df4 = pd.read_csv("output/Matrix4.csv")
+df5 = pd.read_csv("output/Matrix5.csv")
+df6 = pd.read_csv("output/Matrix6.csv")
+df7 = pd.read_csv("output/Matrix7.csv")
+df8 = pd.read_csv("output/Matrix8.csv")
+#df9 = pd.read_csv("output/Matrix9.csv")
 
 fig, axes = plt.subplots(2, 1, figsize=(10, 8))
 
-axes[0].plot(df['Dimensions'], df['Time'], label='blk-grid size 64-14', color='blue')
-axes[0].plot(df2['Dimensions'], df2['Time'], label='32-7', color='red')
-axes[0].plot(df3['Dimensions'], df3['Time'], label='16-3', color='green')
-axes[0].plot(df4['Dimensions'], df4['Time'], label='8-1', color='yellow')
+axes[0].plot(df['Dimensions'], df['Bandwidth'], label='blk-grid size 64-14', color='blue')
+axes[0].plot(df2['Dimensions'], df2['Bandwidth'], label='32-7', color='red')
+axes[0].plot(df3['Dimensions'], df3['Bandwidth'], label='16-3', color='green')
+axes[0].plot(df4['Dimensions'], df4['Bandwidth'], label='8-1', color='yellow')
 axes[0].set_title('Shared Memory Matrix Transpose')
 axes[0].legend()
-axes[0].set_xlim(1024, 2047)
-axes[0].set_ylim(0, 0.0140)
 
 # Plot second graph
 axes[1].plot(df5['Dimensions'], df5['Time'], label='64-14', color='blue')
@@ -36,20 +36,6 @@ plt.tight_layout()
 plt.xlim(1024, 2047)
 plt.ylim(0, 0.0140)
 plt.show()
-
-mean = np.mean(df8['Time'])
-median = np.median(df8['Time'])
-std_dev = np.std(df8['Time'])
-min_val = np.min(df8['Time'])
-max_val = np.max(df8['Time'])
-sum = np.sum(df8['Time'])
-
-print("Mean:", mean)
-print("Median:", median)
-print("Standard Deviation:", std_dev)
-print("Min:", min_val)
-print("Max:", max_val)
-print("Sum: ", sum)
 
 fig, axes = plt.subplots(2, 1, figsize=(10, 8))
 bandwidth1 = (34358647168 / np.power(10, 9)) / 1.3184719999999999

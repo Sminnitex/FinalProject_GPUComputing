@@ -18,14 +18,22 @@ int main(int argc, char *argv[]) {
     //The paths of our benchmark matrices
     const char* path[] = {
         "./dataset/1138_bus/1138_bus.mtx",
-        "./dataset/bcsstk17/bcsstk17.mtx"
+        "./dataset/Maragal_3/Maragal_3.mtx",
+        "./dataset/photogrammetry/photogrammetry.mtx",
+        "./dataset/plbuckle/plbuckle.mtx",
+        "./dataset/bcsstk17/bcsstk17.mtx",
+        "./dataset/filter2D/filter2D.mtx",
+        "./dataset/SiH4/SiH4.mtx",
+        "./dataset/linverse/linverse.mtx",
+        "./dataset/t2dah_a/t2dah_a.mtx",
+        "./dataset/barrier2-10/barrier2-10.mtx"
     };
 
     //Stats of my problem
     srand(time(NULL));
     int array_length = sizeof(path) / sizeof(path[0]);  
-    int blocksize = 32;
-    int gridsize = 1;
+    int blocksize = 16;
+    int gridsize = 7;
     printf("==============================================================\n");
     printf("STATS OF MY PROBLEM\n");
     printf("block size = %d \n", blocksize);
@@ -40,6 +48,8 @@ int main(int argc, char *argv[]) {
     //Timer definitions
     TIMER_DEF;
     float times[NDEVICE] = {0};
+    char filename[556];
+    FILE *csvtime[array_length];
 
     //Print device properties for unitn cluster
     FILE *file = fopen("warp.txt", "r");
@@ -129,6 +139,8 @@ int main(int argc, char *argv[]) {
         
         //Perform sparse matrix transpose with cusparse
         void *buffer;
+        cusparseBuffer(handle, m, n, nnz, d_csrVal, d_csrRowPtr, d_csrColInd, 
+                            d_cscVal, d_cscColPtr, d_cscRowInd, buffer);
         TIMER_START;
         cusparseTranspose(handle, m, n, nnz, d_csrVal, d_csrRowPtr, d_csrColInd, 
                             d_cscVal, d_cscColPtr, d_cscRowInd, buffer);
@@ -198,6 +210,23 @@ int main(int argc, char *argv[]) {
         printf("Global Matrix Transpose Effective Bandwidth(GB/s): %f\n", (2 * m * n * sizeof(dtype)) / (1e9 * times[1]));
         printf("Shared Matrix Transpose Effective Bandwidth(GB/s): %f\n", (2 * m * n * sizeof(dtype)) / (1e9 * times[2]));
         printf("My Sparse Matrix Transpose Effective Bandwidth(GB/s): %f\n", (2 * m * n * sizeof(dtype)) / (1e9 * times[3]));
+
+        //Produce output files
+        sprintf(filename, "output/Matrix%d.csv", k);
+        csvtime[k] = fopen(filename, "w");
+        if (csvtime[k] == NULL) {
+            printf("Error opening file!\n");
+            return 1;
+        }
+        printf("%c", filename[k]);
+        fprintf(csvtime[k], "TheRowsAre,Legend,Cusparse,Global,Shared,MySparse\n");
+        fprintf(csvtime[k], "Bandwidth,Rows,Columns,NonZeros\n");
+
+        for (int i = 0; i < 4; i++) {
+            fprintf(csvtime[k], "%f,%d,%d,%d\n", (2 * m * n * sizeof(dtype)) / (1e9 * times[i]), m, n, nnz);
+        }
+
+        fclose(csvtime[k]);
 
         //Lines for debug purposes
         //printMatrix(matrix, m, n, "Matrix");

@@ -89,7 +89,7 @@ int read_mtx(const char* path, dtype*& matrix, int number[3]) {
     return 0;
 }
 
-void cusparseTranspose(cusparseHandle_t handle, int m, int n, int nnz, 
+void cusparseBuffer(cusparseHandle_t handle, int m, int n, int nnz, 
                              const float *d_csrVal, const int *d_csrRowPtr, const int *d_csrColInd, 
                              float *d_cscVal, int *d_cscColPtr, int *d_cscRowInd, void*& buffer) {
     size_t bufferSize;
@@ -102,8 +102,14 @@ void cusparseTranspose(cusparseHandle_t handle, int m, int n, int nnz,
         exit(EXIT_FAILURE);
     }
     checkCudaErrors(cudaMalloc(&buffer, bufferSize));
-    
-    status = cusparseCsr2cscEx2(handle, m, n, nnz, d_csrVal, d_csrRowPtr, d_csrColInd, 
+    checkCudaErrors(cudaGetLastError());
+    checkCudaErrors(cudaDeviceSynchronize());
+}
+
+void cusparseTranspose(cusparseHandle_t handle, int m, int n, int nnz, 
+                             const float *d_csrVal, const int *d_csrRowPtr, const int *d_csrColInd, 
+                             float *d_cscVal, int *d_cscColPtr, int *d_cscRowInd, void*& buffer) {   
+    cusparseStatus_t status = cusparseCsr2cscEx2(handle, m, n, nnz, d_csrVal, d_csrRowPtr, d_csrColInd, 
                     d_cscVal, d_cscColPtr, d_cscRowInd, 
                     CUDA_R_32F, CUSPARSE_ACTION_NUMERIC, 
                     CUSPARSE_INDEX_BASE_ZERO, CUSPARSE_CSR2CSC_ALG1, buffer);
