@@ -28,4 +28,4 @@ Therefore the prerequisites are the same as the one described in that repository
 >   gcc and cmake
 
 # Attention
-In the Dataset folder the Barrier2 Matrix is both unzipped and zipped, since the unzipped version weights too much and github could have uploaded it wrong, please unzip from the tar the matrix again if necessary
+In the Dataset folder, the Barrier2 Matrix is available both unzipped and zipped. Since the unzipped version is very large and GitHub might not have uploaded it correctly, please unzip the matrix from the tar file again if necessary
