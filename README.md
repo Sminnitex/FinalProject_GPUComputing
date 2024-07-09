@@ -26,3 +26,6 @@ Therefore the prerequisites are the same as the one described in that repository
 >   python3 equipped with matplotlib, pandas and numpy
 >   cuda and the cuda toolkit
 >   gcc and cmake
+
+# Attention
+In the Dataset folder the Barrier2 Matrix is both unzipped and zipped, since the unzipped version weights too much and github could have uploaded it wrong, please unzip from the tar the matrix again if necessary
