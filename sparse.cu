@@ -206,10 +206,10 @@ int main(int argc, char *argv[]) {
         //Print effective Bandwidth
         printf("==============================================================\n");
         printf("STATS of %s\n", path[k]);
-        printf("Sparse Matrix Transpose With Cusparse Effective Bandwidth(GB/s): %f\n", (2 * m * n * sizeof(dtype)) / (1e9 * times[0]));
-        printf("Global Matrix Transpose Effective Bandwidth(GB/s): %f\n", (2 * m * n * sizeof(dtype)) / (1e9 * times[1]));
-        printf("Shared Matrix Transpose Effective Bandwidth(GB/s): %f\n", (2 * m * n * sizeof(dtype)) / (1e9 * times[2]));
-        printf("My Sparse Matrix Transpose Effective Bandwidth(GB/s): %f\n", (2 * m * n * sizeof(dtype)) / (1e9 * times[3]));
+        printf("Sparse Matrix Transpose With Cusparse Effective Bandwidth(GB/s): %f\n", (2 * nnz * sizeof(dtype)) / (1e9 * times[0]));
+        printf("Global Matrix Transpose Effective Bandwidth(GB/s): %f\n", (2 * nnz * sizeof(dtype)) / (1e9 * times[1]));
+        printf("Shared Matrix Transpose Effective Bandwidth(GB/s): %f\n", (2 * nnz * sizeof(dtype)) / (1e9 * times[2]));
+        printf("My Sparse Matrix Transpose Effective Bandwidth(GB/s): %f\n", (2 * nnz * sizeof(dtype)) / (1e9 * times[3]));
 
         //Produce output files
         sprintf(filename, "output/Matrix%d.csv", k);
@@ -223,7 +223,7 @@ int main(int argc, char *argv[]) {
         fprintf(csvtime[k], "Bandwidth,Rows,Columns,NonZeros\n");
 
         for (int i = 0; i < 4; i++) {
-            fprintf(csvtime[k], "%f,%d,%d,%d\n", (2 * m * n * sizeof(dtype)) / (1e9 * times[i]), m, n, nnz);
+            fprintf(csvtime[k], "%f,%d,%d,%d\n", (2 * nnz * sizeof(dtype)) / (1e9 * times[i]), m, n, nnz);
         }
 
         fclose(csvtime[k]);
