@@ -21,6 +21,7 @@ mySparseBand = np.array([df0['Bandwidth'][3], df1['Bandwidth'][3], df2['Bandwidt
 matrixDIM = np.array([df0["Rows"][0] * df0["Columns"][0], df1["Rows"][0] * df1["Columns"][0], df2["Rows"][0] * df2["Columns"][0], df3["Rows"][0] * df3["Columns"][0], df4["Rows"][0] * df4["Columns"][0], df5["Rows"][0] * df5["Columns"][0], df6["Rows"][0] * df6["Columns"][0], df7["Rows"][0] * df7["Columns"][0], df8["Rows"][0] * df8["Columns"][0], df9["Rows"][0] * df9["Columns"][0]])
 
 #Get the sorted indices
+file_indices = np.arange(len(matrixNNZ))
 sorted_indices_nnz = np.argsort(matrixNNZ)
 sorted_indices_dim = np.argsort(matrixDIM)
 
@@ -31,37 +32,51 @@ sorted_globalBand = globalBand[sorted_indices_nnz]
 sorted_sharedBand = sharedBand[sorted_indices_nnz]
 sorted_mySparseBand = mySparseBand[sorted_indices_nnz]
 
-fig1, axes1 = plt.subplots(figsize=(10, 8))
+fig1, axes1 = plt.subplots(2, 1, figsize=(10, 8))
 
-axes1.plot(sorted_matrixNNZ, sorted_cusparseBand, label='Cusparse', color='blue')
-axes1.plot(sorted_matrixNNZ, sorted_globalBand, label='Global', color='red')
-axes1.plot(sorted_matrixNNZ, sorted_sharedBand, label='Shared', color='green')
-axes1.plot(sorted_matrixNNZ, sorted_mySparseBand, label='MySparse', color='yellow')
+axes1[0].plot(sorted_matrixNNZ, sorted_cusparseBand, label='Cusparse', color='blue')
+axes1[0].plot(sorted_matrixNNZ, sorted_globalBand, label='Global', color='red')
+axes1[0].plot(sorted_matrixNNZ, sorted_sharedBand, label='Shared', color='green')
+axes1[0].plot(sorted_matrixNNZ, sorted_mySparseBand, label='MySparse', color='yellow')
 
-axes1.set_xlabel('NonZeros')
-axes1.set_ylabel('Bandwidth')
-axes1.legend()
+axes1[1].plot(file_indices, matrixNNZ, label='Nonzeros', color='blue')
+axes1[1].set_xticks(file_indices) 
+labels = ['1138_bus', 'Maragal_3', 'photogrammetry', 'plbuckle', 'bcsstk17', 'filter2D', 'SiH4', 'linverse', 't2dah_a', 'barrier2-10']
+axes1[1].set_xticklabels(labels, rotation=45)
+axes1[1].set_xlabel('Files')
+axes1[1].set_ylabel('Non zeros')
+axes1[1].legend()
+
+axes1[0].set_xlabel('NonZeros')
+axes1[0].set_ylabel('Bandwidth')
+axes1[0].legend()
 
 #Plot by matrix dim
-fig2, axes2 = plt.subplots(figsize=(10, 8))
+fig2, axes2 = plt.subplots(2, 1, figsize=(10, 8))
 sorted_matrixDIM = matrixDIM[sorted_indices_dim]
 sorted_cusparseBand = cusparseBand[sorted_indices_dim]
 sorted_globalBand = globalBand[sorted_indices_dim]
 sorted_sharedBand = sharedBand[sorted_indices_dim]
 sorted_mySparseBand = mySparseBand[sorted_indices_dim]
 
-axes2.plot(sorted_matrixDIM, sorted_cusparseBand, label='Cusparse', color='blue')
-axes2.plot(sorted_matrixDIM, sorted_globalBand, label='Global', color='red')
-axes2.plot(sorted_matrixDIM, sorted_sharedBand, label='Shared', color='green')
-axes2.plot(sorted_matrixDIM, sorted_mySparseBand, label='MySparse', color='yellow')
+axes2[0].plot(sorted_matrixDIM, sorted_cusparseBand, label='Cusparse', color='blue')
+axes2[0].plot(sorted_matrixDIM, sorted_globalBand, label='Global', color='red')
+axes2[0].plot(sorted_matrixDIM, sorted_sharedBand, label='Shared', color='green')
+axes2[0].plot(sorted_matrixDIM, sorted_mySparseBand, label='MySparse', color='yellow')
 
-axes2.set_xlabel('Dimensions')
-axes2.set_ylabel('Bandwidth')
-axes2.legend()
+axes2[1].plot(file_indices, matrixDIM, label='Dimensions', color='blue')
+axes2[1].set_xticks(file_indices) 
+axes2[1].set_xticklabels(labels, rotation=45)
+axes2[1].set_xlabel('Files')
+axes2[1].set_ylabel('Dimensions')
+axes2[1].legend()
+
+axes2[0].set_xlabel('Dimensions')
+axes2[0].set_ylabel('Bandwidth')
+axes2[0].legend()
 
 # Plot by files
-fig3, axes3 = plt.subplots(figsize=(10, 7))
-file_indices = np.arange(len(matrixNNZ))
+fig3, axes3 = plt.subplots(figsize=(10, 8))
 
 axes3.plot(file_indices, cusparseBand, label='Cusparse', color='blue')
 axes3.plot(file_indices, globalBand, label='Global', color='red')
