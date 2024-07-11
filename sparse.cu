@@ -17,16 +17,16 @@
 int main(int argc, char *argv[]) {
     //The paths of our benchmark matrices
     const char* path[] = {
-        "./dataset/1138_bus/1138_bus.mtx",
-        "./dataset/Maragal_3/Maragal_3.mtx",
-        "./dataset/photogrammetry/photogrammetry.mtx",
-        "./dataset/plbuckle/plbuckle.mtx",
-        "./dataset/bcsstk17/bcsstk17.mtx",
-        "./dataset/filter2D/filter2D.mtx",
-        "./dataset/SiH4/SiH4.mtx",
-        "./dataset/linverse/linverse.mtx",
-        "./dataset/t2dah_a/t2dah_a.mtx",
-        "./dataset/barrier2-10/barrier2-10.mtx"
+        "/home/michele.minniti/FinalProject_GPUComputing/dataset/1138_bus/1138_bus.mtx",
+        "/home/michele.minniti/FinalProject_GPUComputing/dataset/Maragal_3/Maragal_3.mtx",
+        "/home/michele.minniti/FinalProject_GPUComputing/dataset/photogrammetry/photogrammetry.mtx",
+        "/home/michele.minniti/FinalProject_GPUComputing/dataset/plbuckle/plbuckle.mtx",
+        "/home/michele.minniti/FinalProject_GPUComputing/dataset/bcsstk17/bcsstk17.mtx",
+        "/home/michele.minniti/FinalProject_GPUComputing/dataset/filter2D/filter2D.mtx",
+        "/home/michele.minniti/FinalProject_GPUComputing/dataset/SiH4/SiH4.mtx",
+        "/home/michele.minniti/FinalProject_GPUComputing/dataset/linverse/linverse.mtx",
+        "/home/michele.minniti/FinalProject_GPUComputing/dataset/t2dah_a/t2dah_a.mtx",
+        "/home/michele.minniti/FinalProject_GPUComputing/dataset/barrier2-10/barrier2-10.mtx"
     };
 
     //Stats of my problem
@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
     FILE *csvtime[array_length];
 
     //Print device properties for unitn cluster
-    FILE *file = fopen("warp.txt", "r");
+    FILE *file = fopen("/home/michele.minniti/FinalProject_GPUComputing/warp.txt", "r");
     if (file == NULL) {
         printf("Error opening file!\n");
         return 1;

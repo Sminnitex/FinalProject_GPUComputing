@@ -19,6 +19,7 @@ And to check the plots on python
 ``` 
 python plot.py
 ``` 
+If you run it on the Unitrento cluster in the sparse.cu file on lines from 20 to 29, and on line 55 is necessary to change the relative path to the corrispondend absolute path
 
 This project is the direct evolution of https://github.com/Sminnitex/Homework2_GPUComputing
 Therefore the prerequisites are the same as the one described in that repository, and are:
