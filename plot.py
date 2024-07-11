@@ -41,7 +41,7 @@ axes1[0].plot(sorted_matrixNNZ, sorted_mySparseBand, label='MySparse', color='ye
 
 axes1[1].plot(file_indices, matrixNNZ, label='Nonzeros', color='blue')
 axes1[1].set_xticks(file_indices) 
-labels = ['1138_bus', 'Maragal_3', 'photogrammetry', 'plbuckle', 'bcsstk17', 'filter2D', 'SiH4', 'linverse', 't2dah_a', 'barrier2-10']
+labels = ['1138_bus', 'Maragal_3', 'photogrammetry', 'plbuckle', 'bcsstk17', 'filter2D', 'SiH4', 'linverse', 't2dah_a', 'bcsstk35']
 axes1[1].set_xticklabels(labels, rotation=45)
 axes1[1].set_xlabel('Files')
 axes1[1].set_ylabel('Non zeros')
@@ -84,7 +84,7 @@ axes3.plot(file_indices, sharedBand, label='Shared', color='green')
 axes3.plot(file_indices, mySparseBand, label='MySparse', color='yellow')
 
 axes3.set_xticks(file_indices)
-axes3.set_xticklabels(['1138_bus', 'Maragal_3', 'photogrammetry', 'plbuckle', 'bcsstk17', 'filter2D', 'SiH4', 'linverse', 't2dah_a', 'barrier2-10'], rotation=45)
+axes3.set_xticklabels(['1138_bus', 'Maragal_3', 'photogrammetry', 'plbuckle', 'bcsstk17', 'filter2D', 'SiH4', 'linverse', 't2dah_a', 'bcsstk17'], rotation=45)
 axes3.set_xlabel('Files')
 axes3.set_ylabel('Bandwidth')
 axes3.legend()

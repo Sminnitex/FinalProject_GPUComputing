@@ -26,7 +26,7 @@ int main(int argc, char *argv[]) {
         "/home/michele.minniti/FinalProject_GPUComputing/dataset/SiH4/SiH4.mtx",
         "/home/michele.minniti/FinalProject_GPUComputing/dataset/linverse/linverse.mtx",
         "/home/michele.minniti/FinalProject_GPUComputing/dataset/t2dah_a/t2dah_a.mtx",
-        "/home/michele.minniti/FinalProject_GPUComputing/dataset/barrier2-10/barrier2-10.mtx"
+        "/home/michele.minniti/FinalProject_GPUComputing/dataset/bcsstk35/bcsstk35.mtx"
     };
 
     //Stats of my problem
