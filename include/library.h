@@ -199,7 +199,7 @@ __global__ void fillCscValAndRowInd(int m, int n, int nnz, dtype *d_csrVal, int 
                                     int *d_csrColInd, dtype *d_cscVal, int *d_cscColPtr, int *d_cscRowInd) {
     int tid = blockDim.x * blockIdx.x + threadIdx.x;
     if (tid < m) {
-        for (int i = d_csrRowPtr[tid]; i < d_csrRowPtr[tid]; i++) {
+        for (int i = d_csrRowPtr[tid]; i < d_csrRowPtr[tid + 1]; i++) {
             int col = d_csrColInd[i];
             int dest = atomicAdd(&d_cscColPtr[col], 1);
             d_cscVal[dest] = d_csrVal[i];
