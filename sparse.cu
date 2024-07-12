@@ -233,7 +233,7 @@ int main(int argc, char *argv[]) {
         //printSparseMatrix(h_csrRowPtr, h_csrColInd, h_csrVal, n, nnz, "Cusparse Transposed Matrix");
         //printMatrix(h_transpose, m, n, "Transpose");
         //printMatrix(h_transposeShared, m, n, "Transpose Shared");
-        //printDeviceData<<<1, 1, 0, stream>>>(d_cscColPtr, d_cscRowInd, d_csrVal, m, nnz);
+        //printDeviceData<<<1, 1, 0, stream>>>(d_cscColPtr, d_cscRowInd, transposeShared, m, nnz);
 
         //Destroy everything
         checkCudaErrors(cudaFree(d_csrRowPtr));

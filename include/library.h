@@ -237,7 +237,7 @@ void sparseMatrixTranspose(int m, int n, int nnz, dtype *d_csrVal, int *d_csrRow
     checkCudaErrors(cudaMemset(d_cscColPtr, 0, sizeof(int)));
 
     //Launch kernel to fill the CSC values and row indices
-    gridSize = (m + blockSize - 1) / blockSize;
+    gridSize = (m + blockSize - 1) / blockSize;     
     fillCscValAndRowInd<<<gridSize, blockSize, sharedMemory, stream>>>(m, n, nnz, d_csrVal, d_csrRowPtr, 
                                                  d_csrColInd, d_cscVal, d_cscColPtr, d_cscRowInd);
     checkCudaErrors(cudaGetLastError());
