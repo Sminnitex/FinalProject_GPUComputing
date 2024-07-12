@@ -130,7 +130,7 @@ of NVIDIA, the global and shared memory kernels used on in order to confront sim
 kernel ad hoc for sparse matrices, and with the label ”MyS-
 parse” my function to manage sparse matrix transposition.
 
-![alt text](https://github.com/Sminnitex/FinalProject_GPUComputing/blob/master/figures/NonZeros.png?raw=true)
+![alt text](https://github.com/Sminnitex/FinalProject_GPUComputing/blob/main/figures/NonZeros.png?raw=true)
 
 As we could expect, even considering the way I calculated
 the bandwidth, the Bandwidth calculated in GB/s grows almost
@@ -150,7 +150,7 @@ performance for matrices of dimensions between 1 ∗ 1e8 and
 be seen in the plot of reference below. That happens because
 those are the sparse matrices that in respect with dimensions
 
-![alt text](https://github.com/Sminnitex/FinalProject_GPUComputing/blob/master/figures/Dimensions.png?raw=true)
+![alt text](https://github.com/Sminnitex/FinalProject_GPUComputing/blob/main/figures/Dimensions.png?raw=true)
 
 have an higher concentration of non zero values, as we can
 see in fig. 1. In the more dense matrices we have a significant
@@ -159,7 +159,7 @@ and a less important improve also for the sparse techniques.
 Then we step to the last plot, where we analyze the
 bandwidth in respect to each Matrix.
 
-![alt text](https://github.com/Sminnitex/FinalProject_GPUComputing/blob/master/figures/perfile.png?raw=true)
+![alt text](https://github.com/Sminnitex/FinalProject_GPUComputing/blob/main/figures/perfile.png?raw=true)
 
 Here we can see clearly how all four techniques follow a
 general trend in performance in respect to the amount of data
